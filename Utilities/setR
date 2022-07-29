@@ -1,0 +1,64 @@
+#! /bin/sh
+# Taken from http://www.bgl.nu/~glouis/setR.html
+# Copyright 2003 Gregory Louis.
+
+# command-line args to pass to R
+
+# make sure this is in your path
+
+Rargs="--no-save -q"
+
+if [ "x$1" = "xh" -o "x$1" = "x-h" ]; then
+    cat <<EOT
+NAME
+    setR - wrapper to provide a hashbang equivalent for R scripts
+SYNOPSIS
+    setR -h
+      or
+    #! /bin/sh /usr/bin/setR
+DESCRIPTION
+    setR writes an R profile in $TMPDIR containing a function .First that
+    sources the calling script. If there are any command-line parameters
+    in the invocation of the calling script, these are assigned to
+    array argv before function .First's "source" command. If not, argv
+    will exist with length 0. R is then called with this profile and
+    command-line arguments $Rargs.
+OPTIONS
+    -h	The option -h displays help.
+EOT
+    exit 0
+fi
+
+# get the name of the calling script; if ./something, replace . with $PWD
+caller=$1; shift
+test "x${caller#./}" != "x$caller" && caller=$PWD${caller#.}
+
+# begin an R profile with standard options, and startup function .First
+profn=$TMPDIR/R$$; test "x$TMPDIR" = "x" && profn=/tmp/R$$
+cat > $profn <<-EOT
+   require(utils)
+   require(grDevices)
+	options(CRAN="http://cran.us.r-project.org", papersize="letter")
+	library(graphics)
+	par(las=1, font.lab=2, pty="s", tcl=0.35, mgp=c(2.75,0.5,0), bty="l")
+	.First <- function() {
+EOT
+
+# make a comma-separated list of command-line arguments, if any
+echo -n "    argv <<- c(" >> $profn
+while [ "x$1" != "x" ]; do
+    echo -n "\"$1\"" >> $profn; shift
+    test "x$1" != "x" && echo -n ", " >> $profn
+done
+echo ")" >> $profn
+
+# let the .First function end by feeding the calling script to R
+cat >> $profn <<-EOT
+	    source("$caller")
+	}
+EOT
+
+# run R and then delete the profile
+R_PROFILE=$profn /usr/bin/R $Rargs
+/bin/rm -f $profn
+
