@@ -5,5 +5,3 @@ This directory contains various scripts to control an experiment, such as linkin
 This directory contains various scripts to analyze data resulting from an experiment, and the directory, Plotting, contains various scripts to plot raw or derived data. 
 ## Utilities
 This directory contains various scripts, mainly mathematical procedures, that are involved in analyses.
-
-I either entirely wrote or contributed to all script files in the above directories. This is still a work in progress.
